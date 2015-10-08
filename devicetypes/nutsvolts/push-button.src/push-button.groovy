@@ -153,11 +153,9 @@ private Map parseCatchAllMessage(String description) {
         
         case "[0, 0]":															// Level command acknowledged  
         def cLevel = device.currentState("level")?.value as int
-        
-        def fValue = 100 / (255/cLevel)
-        cLevel=(int)fValue
-        
-	log.trace "New Level Acknowledged" 
+        //def fValue = 100 / (255/cLevel)
+        //cLevel=(int)fValue 
+        cLevel=(int)100 / (255/cLevel)
         resultMap.name = "levelPercent"
         resultMap.value = cLevel        
         resultMap.displayed = true        
