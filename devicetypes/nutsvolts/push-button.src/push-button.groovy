@@ -181,6 +181,7 @@ def off() {
 }
 
 def refresh() {
+	log.info "read attributes request sent"
 	[
 	"st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500",
     "st rattr 0x${device.deviceNetworkId} 1 8 0"
