@@ -79,7 +79,10 @@ private Map parseReportAttributeMessage(String description) {
     if (descMap.cluster == "0008" && descMap.attrId == "0000") { 
         resultMap.name = "level"
         resultMap.value = (Integer.parseInt(descMap.value, 16))      
-        resultMap.displayed = true                
+        resultMap.displayed = true  
+        
+        def cLevel = (int) 100 / (255/resultMap.value)
+        sendEvent(name: "levelPercent", value: cLevel, displayed: false) 
     }
     else {
     	log.debug "Attribute match not found for --> $descMap"
@@ -153,13 +156,10 @@ private Map parseCatchAllMessage(String description) {
         
         case "[0, 0]":															// Level command acknowledged  
         def cLevel = device.currentState("level")?.value as int
-        //def fValue = 100 / (255/cLevel)
-        //cLevel=(int)fValue 
         cLevel=(int)100 / (255/cLevel)
         resultMap.name = "levelPercent"
         resultMap.value = cLevel        
         resultMap.displayed = true        
-        
         break                    
         }
    }
