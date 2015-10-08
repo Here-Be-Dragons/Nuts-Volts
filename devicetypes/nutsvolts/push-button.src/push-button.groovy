@@ -12,15 +12,14 @@
 metadata {
 	definition (name: "Push Button", namespace: "NutsVolts", author: "John.Rucker@Solar-Current.com") {
 	
-    	capability "Actuator"
-        capability "Configuration"
-        capability "Refresh"
+    capability "Actuator"
+    capability "Configuration"
+    capability "Refresh"
 	capability "Sensor"
-        capability "Switch"
+    capability "Switch"
 	capability "Switch Level"
 	
-	attribute "levelPercent","number"
-	
+	attribute "levelPercent","number"	
 
 	fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
@@ -153,7 +152,12 @@ private Map parseCatchAllMessage(String description) {
         switch(cluster.data) {
         
         case "[0, 0]":									// Level command acknowledged  
+        def cLevel = device.currentState("level")?.value as int
 		log.trace "New Level Acknowledged" 
+        resultMap.name = "levelPercent"
+        resultMap.value = cLevel        
+        resultMap.displayed = true        
+        
         break                    
         }
    }
