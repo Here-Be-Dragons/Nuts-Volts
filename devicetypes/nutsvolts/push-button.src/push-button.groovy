@@ -189,6 +189,7 @@ def refresh() {
 
 def setLevel(value) {
 	log.info "Level($value) sent"
+    sendEvent(name: "level", value: value, displayed: false)    
 	def cmds = []
     def level = hexString(Math.round(value))
 	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 0 {${level} 0000}"
