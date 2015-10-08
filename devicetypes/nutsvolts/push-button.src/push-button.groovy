@@ -15,11 +15,14 @@ metadata {
     	capability "Actuator"
         capability "Configuration"
         capability "Refresh"
-		capability "Sensor"
+	capability "Sensor"
         capability "Switch"
-		capability "Switch Level"
+	capability "Switch Level"
+	
+	attribute "levelPercent","number"
+	
 
-		fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
+	fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
 
 	// simulator metadata
@@ -39,8 +42,8 @@ metadata {
 		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false, range:"(1..255)") {
 			state "level", action:"Switch Level.setLevel"
 		}
-		valueTile("level", "device.level", inactiveLabel: false, decoration: "flat") {
-			state "level", label: 'Level ${currentValue}'
+		valueTile("level", "device.levelPercent", inactiveLabel: false, decoration: "flat") {
+			state "level", label: '${currentValue}%'
 		}
 		
 		main(["switch"])
