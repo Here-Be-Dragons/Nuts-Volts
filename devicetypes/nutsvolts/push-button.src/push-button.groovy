@@ -151,7 +151,7 @@ private Map parseCatchAllMessage(String description) {
     	//log.trace "level Cluster default response = $cluster.data"  
         switch(cluster.data) {
         
-        case "[0, 0]":									// Level command acknowledged  
+        case "[0, 0]":															// Level command acknowledged  
         def cLevel = device.currentState("level")?.value as int
 		log.trace "New Level Acknowledged" 
         resultMap.name = "levelPercent"
