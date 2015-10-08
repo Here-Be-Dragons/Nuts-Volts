@@ -118,13 +118,13 @@ private Map parseCatchAllMessage(String description) {
     	//log.trace "On Off Cluster report = $cluster.data"
         switch(cluster.data) {
         
-        case "[0, 0, 0, 16, 0]":											// Switch is off attribute report   
+        case "[0, 0, 0, 16, 0]":							// Switch is off attribute report   
         resultMap.name = "switch"
         resultMap.value = "off" 
         resultMap.displayed = true
         break     
         
-        case "[0, 0, 0, 16, 1]":												// Switch is on attribute report       
+        case "[0, 0, 0, 16, 1]":							// Switch is on attribute report       
         resultMap.name = "switch"
         resultMap.value = "on"   
         resultMap.displayed = true
@@ -135,13 +135,13 @@ private Map parseCatchAllMessage(String description) {
     	//log.trace "On Off Cluster default response = $cluster.data"
         switch(cluster.data) {
         
-        case "[0, 0]":															// Switch acknowledged off command   
+        case "[0, 0]":									// Switch acknowledged off command   
         resultMap.name = "switch"
         resultMap.value = "off" 
         resultMap.displayed = true
         break     
         
-        case "[1, 0]":															// Switch acknowledged on command        
+        case "[1, 0]":									// Switch acknowledged on command        
         resultMap.name = "switch"
         resultMap.value = "on"        
         resultMap.displayed = true
@@ -152,7 +152,7 @@ private Map parseCatchAllMessage(String description) {
     	//log.trace "level Cluster default response = $cluster.data"  
         switch(cluster.data) {
         
-        case "[0, 0]":															// Level command acknowledged  
+        case "[0, 0]":									// Level command acknowledged  
 		log.trace "New Level Acknowledged" 
         break                    
         }
@@ -229,7 +229,7 @@ def configure() {
     log.debug "Binding SEP 0x38 DEP 0x01 Cluster 0x0008 Level cluster to hub"      
     
     def cmd = []
-    cmd << "zdo bind 0x${device.deviceNetworkId} 0x38 0x01 0x0006 {${device.zigbeeId}} {}"			// Bind to end point 0x38 and the On/Off Cluster
+    cmd << "zdo bind 0x${device.deviceNetworkId} 0x38 0x01 0x0006 {${device.zigbeeId}} {}"		// Bind to end point 0x38 and the On/Off Cluster
     cmd << "delay 150"
     cmd << "zdo bind 0x${device.deviceNetworkId} 0x38 0x01 0x0008 {${device.zigbeeId}} {}"    		// Bind to end point 0x38 and the Level Cluster
     cmd << "delay 1500"       
