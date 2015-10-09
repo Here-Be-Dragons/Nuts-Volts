@@ -209,8 +209,12 @@ def setLevel(value) {
 }
 
 def sendRGB(value) {
-    log.trace "sendRGB ${value}"
-    log.trace "RGB as Hex value = ${value.hex}"
+    def cx = value.hex
+    cx = cx.substring(1, cx.length())												// Remove # from front of hex value.hex string
+    log.trace "Sending new RGB Hex color 0x${cx}"
+    def cmds = []
+    cmds << "st wattr 0x${device.deviceNetworkId} 0x38 0x0008 0x400 0x23 {${cx}}"	// Send new RGB Color value write attribute 0x0400
+    cmds        
 }
 
 def parseDescriptionAsMap(description) {
