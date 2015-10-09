@@ -20,6 +20,8 @@ metadata {
 	capability "Switch Level"
     
     command "sendRGB"
+    
+    attribute "buttonColor","string"
 
 	fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
@@ -88,6 +90,16 @@ private Map parseReportAttributeMessage(String description) {
             resultMap.value=(int)100 / (255/resultMap.value)
         } 
     }
+    else if (descMap.cluster == "0008" && descMap.attrId == "0400") { 
+        resultMap.name = "buttonColor"        
+        def cx = descMap.value
+        cx = cx.substring(2, cx.length())												// Remove two 0 from front of string
+        resultMap.value = "#${cx}"
+        resultMap.displayed = true  
+        
+        sendEvent(name: "color", value: "hex.${resultMap.value}", displayed: false) 
+    }    
+    
     else {
     	log.debug "Attribute match not found for --> $descMap"
     }
