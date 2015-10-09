@@ -18,8 +18,6 @@ metadata {
 	capability "Sensor"
     capability "Switch"
 	capability "Switch Level"
-	
-	attribute "levelPercent","number"	
 
 	fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
@@ -29,24 +27,26 @@ metadata {
 	}
 
 	// UI tile definitions
-	tiles {
-		standardTile("switch", "device.switch", width: 2, height: 2, canChangeIcon: true) {
-			state "on", label:'${name}', action:"switch.off", icon:"st.switches.switch.on", backgroundColor:"#79b821", nextState:"sent"
-			state "off", label:'${name}', action:"switch.on", icon:"st.switches.switch.off", backgroundColor:"#ffffff", nextState:"sent"
-			state "sent", label: 'wait', icon: "st.motion.motion.active", backgroundColor: "#ffa81e"              
+	tiles (scale: 2){
+		multiAttributeTile(name:"switch", type: "lighting", width: 6, height: 4, canChangeIcon: true){
+			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
+				attributeState "on", label:'${name}', action:"switch.off", icon:"st.lights.philips.hue-single", backgroundColor:"#79b821", nextState:"sent"
+				attributeState "off", label:'${name}', action:"switch.on", icon:"st.lights.philips.hue-single", backgroundColor:"#ffffff", nextState:"sent"
+				attributeState "sent", label: 'wait', icon: "st.motion.motion.active", backgroundColor: "#ffa81e"  
+			}
+			tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+				attributeState "level", action:"switch level.setLevel"
+			}
+			tileAttribute ("device.color", key: "COLOR_CONTROL") {
+				attributeState "color", action:"setAdjustedColor"
+			}
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
 		}
-		controlTile("levelSliderControl", "device.level", "slider", height: 1, width: 3, inactiveLabel: false, range:"(1..255)") {
-			state "level", action:"Switch Level.setLevel"
-		}
-		valueTile("level", "device.levelPercent", inactiveLabel: false, decoration: "flat") {
-			state "level", label: '${currentValue}%'
-		}
 		
 		main(["switch"])
-		details(["switch", "level", "levelSliderControl", "refresh"])
+		details(["switch", "refresh"])
 	}
 }
 
@@ -80,9 +80,11 @@ private Map parseReportAttributeMessage(String description) {
         resultMap.name = "level"
         resultMap.value = (Integer.parseInt(descMap.value, 16))      
         resultMap.displayed = true  
-        
-        def cLevel = (int) 100 / (255/resultMap.value)
-        sendEvent(name: "levelPercent", value: cLevel, displayed: false) 
+        if (resultMap.value < 1){
+            resultMap.value = 1
+        }else{
+            resultMap.value=(int)100 / (255/resultMap.value)
+        } 
     }
     else {
     	log.debug "Attribute match not found for --> $descMap"
@@ -137,16 +139,16 @@ private Map parseCatchAllMessage(String description) {
     	//log.trace "On Off Cluster default response = $cluster.data"
         switch(cluster.data) {
         
-        case "[0, 0]":									// Switch acknowledged off command   
+        case "[0, 0]":															// Switch acknowledged off command   
         resultMap.name = "switch"
         resultMap.value = "off" 
-        resultMap.displayed = true
+        resultMap.displayed = false
         break     
         
-        case "[1, 0]":									// Switch acknowledged on command        
+        case "[1, 0]":															// Switch acknowledged on command        
         resultMap.name = "switch"
         resultMap.value = "on"        
-        resultMap.displayed = true
+        resultMap.displayed = false
         break                 
         }
     } 
@@ -156,10 +158,9 @@ private Map parseCatchAllMessage(String description) {
         
         case "[0, 0]":															// Level command acknowledged  
         def cLevel = device.currentState("level")?.value as int
-        cLevel=(int)100 / (255/cLevel)
-        resultMap.name = "levelPercent"
+        resultMap.name = "level"
         resultMap.value = cLevel        
-        resultMap.displayed = true        
+        resultMap.displayed = false        
         break                    
         }
    }
@@ -191,10 +192,16 @@ def refresh() {
 }
 
 def setLevel(value) {
-	log.info "Level($value) sent"
+    if (value < 1){
+        value = 1
+    }else if (value > 99){
+        value = 99
+    }
     sendEvent(name: "level", value: value, displayed: false)    
+    def cLevel=(int)value * 2.56													// Scale value basee on 1 to 256 for level
+    log.info "Level ${value}% sacle = ${cLevel} sent"
 	def cmds = []
-    def level = hexString(Math.round(value))
+    def level = hexString(Math.round(cLevel))
 	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 0 {${level} 0000}"
 	cmds
 }
