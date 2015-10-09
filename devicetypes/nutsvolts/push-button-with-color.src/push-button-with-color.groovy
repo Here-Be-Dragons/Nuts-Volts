@@ -18,6 +18,8 @@ metadata {
 	capability "Sensor"
     capability "Switch"
 	capability "Switch Level"
+    
+    command "sendRGB"
 
 	fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
@@ -38,7 +40,7 @@ metadata {
 				attributeState "level", action:"switch level.setLevel"
 			}
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
-				attributeState "color", action:"setAdjustedColor"
+				attributeState "color", action:"sendRGB"
 			}
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
@@ -204,6 +206,11 @@ def setLevel(value) {
     def level = hexString(Math.round(cLevel))
 	cmds << "st cmd 0x${device.deviceNetworkId} 1 8 0 {${level} 0000}"
 	cmds
+}
+
+def sendRGB(value) {
+    log.trace "sendRGB ${value}"
+    log.trace "RGB as Hex value = ${value.hex}"
 }
 
 def parseDescriptionAsMap(description) {
