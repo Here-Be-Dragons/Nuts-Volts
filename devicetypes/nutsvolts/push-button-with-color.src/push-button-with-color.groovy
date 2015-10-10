@@ -20,10 +20,6 @@ metadata {
 	capability "Switch Level"
 	capability "Color Control"    
     
-    command "sendRGB"
-    
-    attribute "buttonColor","string"
-    
 	fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
 
@@ -43,7 +39,7 @@ metadata {
 				attributeState "level", action:"switch level.setLevel"
 			}
 			tileAttribute ("device.color", key: "COLOR_CONTROL") {
-				attributeState "color", action:"sendRGB"
+				attributeState "color", action:"setColor"
 			}
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
@@ -92,13 +88,13 @@ private Map parseReportAttributeMessage(String description) {
         } 
     }
     else if (descMap.cluster == "0008" && descMap.attrId == "0400") { 
-        resultMap.name = "buttonColor"        
+        resultMap.name = "color"        
         def cx = descMap.value
         cx = cx.substring(2, cx.length())												// Remove two 0 from front of string
         resultMap.value = "#${cx}"
         resultMap.displayed = true  
         
-        sendEvent(name: "color", value: resultMap.value, displayed: false) 
+        //sendEvent(name: "color", value: resultMap.value, displayed: false) 
     }    
     
     else {
@@ -221,7 +217,7 @@ def setLevel(value) {
 	cmds
 }
 
-def sendRGB(value) {
+def setColor(value) {
 	log.trace"Color params = ${value}"
     //sendEvent(name: "color", value: value, displayed: false)
     def cx = value.hex
