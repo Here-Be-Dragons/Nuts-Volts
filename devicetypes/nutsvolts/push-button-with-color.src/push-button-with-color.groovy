@@ -18,11 +18,12 @@ metadata {
 	capability "Sensor"
     capability "Switch"
 	capability "Switch Level"
+	capability "Color Control"    
     
     command "sendRGB"
     
     attribute "buttonColor","string"
-
+    
 	fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
 
@@ -97,7 +98,7 @@ private Map parseReportAttributeMessage(String description) {
         resultMap.value = "#${cx}"
         resultMap.displayed = true  
         
-        sendEvent(name: "color", value: "hex.${resultMap.value}", displayed: false) 
+        sendEvent(name: "color", value: resultMap.value, displayed: false) 
     }    
     
     else {
@@ -221,6 +222,8 @@ def setLevel(value) {
 }
 
 def sendRGB(value) {
+	log.trace"Color params = ${value}"
+    //sendEvent(name: "color", value: value, displayed: false)
     def cx = value.hex
     cx = cx.substring(1, cx.length())												// Remove # from front of hex value.hex string
     log.trace "Sending new RGB Hex color 0x${cx}"
