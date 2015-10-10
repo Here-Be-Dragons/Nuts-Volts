@@ -18,7 +18,9 @@ metadata {
 	capability "Sensor"
     capability "Switch"
 	capability "Switch Level"
-	capability "Color Control"    
+	capability "Color Control"  
+    
+    attribute "info","string"
     
 	fingerprint profileId: "0104", inClusters: "0000,0003,0004,0005,0006,0008,FF00", outClusters: "0019"
 	}
@@ -81,20 +83,16 @@ private Map parseReportAttributeMessage(String description) {
         resultMap.name = "level"
         resultMap.value = (Integer.parseInt(descMap.value, 16))      
         resultMap.displayed = true  
-        if (resultMap.value < 1){
-            resultMap.value = 1
-        }else{
-            resultMap.value=(int)100 / (255/resultMap.value)
-        } 
+        resultMap.value=(int)100 / (255/resultMap.value)
+        if (resultMap.vale <1) resultMap.value = 1
     }
     else if (descMap.cluster == "0008" && descMap.attrId == "0400") { 
-        resultMap.name = "color"        
         def cx = descMap.value
-        cx = cx.substring(2, cx.length())												// Remove two 0 from front of string
+        cx = cx.substring(2, cx.length())												// Remove two 0 from front of string    
+        resultMap.name = "color"        
         resultMap.value = "#${cx}"
         resultMap.displayed = true  
-        
-        //sendEvent(name: "color", value: resultMap.value, displayed: false) 
+        setColorMapFromHexRGB(cx)														// Set Hue and Sat based on RGB Hex string
     }    
     
     else {
@@ -168,22 +166,32 @@ private Map parseCatchAllMessage(String description) {
         switch(cluster.data) {
         
         case "[0, 0]":															// Level command acknowledged  
-        def cLevel = device.currentState("level")?.value as int
-        resultMap.name = "level"
-        resultMap.value = cLevel        
+        resultMap.name = "info"
+        resultMap.value = "set level cmd ack"         
         resultMap.displayed = false        
-        break                    
+        break                  
         }
-   }
-    
+   } 
+    else if (cluster.clusterId == 0x0008 && cluster.command == 0x04) {			// command 0x04 = write attribuite cmd response
+    	//log.trace "level Cluster default response = $cluster.data"  
+        switch(cluster.data) {
+        
+        case "[0, 4, 0]":													  	// setColor command acknowledged  
+        resultMap.name = "info"
+        resultMap.value = "write color attribute ack"        
+        resultMap.displayed = false        
+        break             
+        }
+   }    
     else {
     	log.debug "CatchAll match not found for --> $description"
-        log.debug "ZigBee.parse --> $cluster"
+        log.debug "cluster.data = $cluster"
     }        
     
     return resultMap
 }
 
+// Commands
 def on() {
 	log.info "on cmd sent"
 	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
@@ -192,14 +200,6 @@ def on() {
 def off() {
 	log.info "off cmd sent"
 	"st cmd 0x${device.deviceNetworkId} 1 6 0 {}"
-}
-
-def refresh() {
-	log.info "read attributes request sent"
-	[
-	"st rattr 0x${device.deviceNetworkId} 1 6 0", "delay 500",
-    "st rattr 0x${device.deviceNetworkId} 1 8 0"
-    ]
 }
 
 def setLevel(value) {
@@ -218,14 +218,48 @@ def setLevel(value) {
 }
 
 def setColor(value) {
-	log.trace"Color params = ${value}"
-    //sendEvent(name: "color", value: value, displayed: false)
-    def cx = value.hex
-    cx = cx.substring(1, cx.length())												// Remove # from front of hex value.hex string
-    log.trace "Sending new RGB Hex color 0x${cx}"
+	log.trace"setColor = ${value}"    
+    def cx = value.hex    
+    cx = cx.substring(1, cx.length())														// Remove # from front of hex value.hex string
     def cmds = []
-    cmds << "st wattr 0x${device.deviceNetworkId} 0x38 0x0008 0x400 0x23 {${cx}}"	// Send new RGB Color value write attribute 0x0400
+    cmds << "st wattr 0x${device.deviceNetworkId} 0x38 0x0008 0x400 0x23 {${cx}}"			// Send new RGB Color value write attribute 0x0400
     cmds        
+}
+
+def refresh() {
+	log.info "read attributes request sent"
+    def cmd = []
+    cmd << "st rattr 0x${device.deviceNetworkId} 0x38 0x0006 0x0000"     					// Read On / Off attribute
+    cmd << "delay 500"
+    cmd << "st rattr 0x${device.deviceNetworkId} 0x38 0x0008 0x0000"						// Read Level attribute 
+    cmd << "delay 500"
+    cmd << "st rattr 0x${device.deviceNetworkId} 0x38 0x0008 0x0400"    					// Read Custom attribute for RGB color value
+    return cmd
+}
+
+def configure() {
+    log.debug "Binding SEP 0x38 DEP 0x01 Cluster 0x0006 ON/Off cluster to hub"  
+    log.debug "Binding SEP 0x38 DEP 0x01 Cluster 0x0008 Level cluster to hub"      
+    
+    def cmd = []
+    cmd << "zdo bind 0x${device.deviceNetworkId} 0x38 0x01 0x0006 {${device.zigbeeId}} {}"	// Bind to end point 0x38 and the On/Off Cluster
+    cmd << "delay 150"
+    cmd << "zdo bind 0x${device.deviceNetworkId} 0x38 0x01 0x0008 {${device.zigbeeId}} {}"   // Bind to end point 0x38 and the Level Cluster
+    cmd << "delay 1500"       
+    
+    return cmd + refresh() // send refresh cmds as part of config
+}
+
+// Utils
+
+def setColorMapFromHexRGB(HexRGB) {
+    //log.info "setColrMapFromHexRGB called with ${HexRGB}"    
+    def r = Integer.parseInt(HexRGB.substring(0, HexRGB.length()-4), 16)
+    def g = Integer.parseInt(HexRGB.substring(2, HexRGB.length()-2), 16)
+    def b = Integer.parseInt(HexRGB.substring(4, HexRGB.length()), 16)
+	def cCal = rgbToHSV(r, g, b)
+	sendEvent(name: "hue", value: cCal.hue)
+	sendEvent(name: "saturation", value: cCal.saturation)        
 }
 
 def parseDescriptionAsMap(description) {
@@ -235,6 +269,7 @@ def parseDescriptionAsMap(description) {
     }
 }
 
+/*
 private hex(value, width=2) {
 	def s = new BigInteger(Math.round(value).toString()).toString(16)
 	while (s.size() < width) {
@@ -246,6 +281,7 @@ private hex(value, width=2) {
 private String swapEndianHex(String hex) {
     reverseArray(hex.decodeHex()).encodeHex()
 }
+
 
 private byte[] reverseArray(byte[] array) {
     int i = 0;
@@ -260,16 +296,43 @@ private byte[] reverseArray(byte[] array) {
     }
     return array
 }
+*/
 
-def configure() {
-    log.debug "Binding SEP 0x38 DEP 0x01 Cluster 0x0006 ON/Off cluster to hub"  
-    log.debug "Binding SEP 0x38 DEP 0x01 Cluster 0x0008 Level cluster to hub"      
-    
-    def cmd = []
-    cmd << "zdo bind 0x${device.deviceNetworkId} 0x38 0x01 0x0006 {${device.zigbeeId}} {}"		// Bind to end point 0x38 and the On/Off Cluster
-    cmd << "delay 150"
-    cmd << "zdo bind 0x${device.deviceNetworkId} 0x38 0x01 0x0008 {${device.zigbeeId}} {}"    		// Bind to end point 0x38 and the Level Cluster
-    cmd << "delay 1500"       
-    
-    return cmd + refresh() // send refresh cmds as part of config
+
+def rgbToHSV(red, green, blue) {
+	float r = red / 255f
+	float g = green / 255f
+	float b = blue / 255f
+	float max = [r, g, b].max()
+	float delta = max - [r, g, b].min()
+	def hue = 13
+	def saturation = 0
+	if (max && delta) {
+		saturation = 100 * delta / max
+		if (r == max) {
+			hue = ((g - b) / delta) * 100 / 6
+		} else if (g == max) {
+			hue = (2 + (b - r) / delta) * 100 / 6
+		} else {
+			hue = (4 + (r - g) / delta) * 100 / 6
+		}
+	}
+	[hue: hue, saturation: saturation, value: max * 100]
+}
+
+def huesatToRGB(float hue, float sat) {
+	while(hue >= 100) hue -= 100
+	int h = (int)(hue / 100 * 6)
+	float f = hue / 100 * 6 - h
+	int p = Math.round(255 * (1 - (sat / 100)))
+	int q = Math.round(255 * (1 - (sat / 100) * f))
+	int t = Math.round(255 * (1 - (sat / 100) * (1 - f)))
+	switch (h) {
+		case 0: return [255, t, p]
+		case 1: return [q, 255, p]
+		case 2: return [p, 255, t]
+		case 3: return [p, q, 255]
+		case 4: return [t, p, 255]
+		case 5: return [255, p, q]
+	}
 }
