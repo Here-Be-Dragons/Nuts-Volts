@@ -46,8 +46,8 @@ metadata {
 		}
 		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat") {
 			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
-		
+		}		      
+        
 		main(["switch"])
 		details(["switch", "refresh"])
 	}
@@ -83,8 +83,12 @@ private Map parseReportAttributeMessage(String description) {
         resultMap.name = "level"
         resultMap.value = (Integer.parseInt(descMap.value, 16))      
         resultMap.displayed = true  
-        resultMap.value=(int)100 / (255/resultMap.value)
-        if (resultMap.vale <1) resultMap.value = 1
+        def v =(int)100 / (255/resultMap.value)
+        if (v < 1){
+        	resultMap.value = 1
+        }else{
+        	resultMap.value = v
+        }
     }
     else if (descMap.cluster == "0008" && descMap.attrId == "0400") { 
         def cx = descMap.value
