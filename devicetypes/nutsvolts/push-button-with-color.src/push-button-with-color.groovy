@@ -119,6 +119,17 @@ private Map parseOnOff(String description) {
         resultMap.value = "on"
         resultMap.displayed = true
     }  
+    else if(description?.endsWith("2")) {
+        resultMap.name = "info"
+        resultMap.value = "Button Power Up"
+        resultMap.displayed = true
+        
+        Map cClr = [:]
+        cClr.hex = device.currentState("color")?.value
+        //sendEvent(setColor(cClr))
+    }      
+    
+    
     else {
     	log.debug "On/Off match not found for --> $description"
     }    
