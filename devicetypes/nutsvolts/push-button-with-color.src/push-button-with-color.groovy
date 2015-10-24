@@ -119,14 +119,11 @@ private Map parseOnOff(String description) {
         resultMap.value = "on"
         resultMap.displayed = true
     }  
-    else if(description?.endsWith("2")) {
-        resultMap.name = "info"
-        resultMap.value = "Button Power Up"
-        resultMap.displayed = true
-        
+    else if(description?.endsWith("2")) {   
         Map cClr = [:]
         cClr.hex = device.currentState("color")?.value
-        sendEvent(setColor(cClr))
+        log.debug "calling setColor on boot with ${cClr}"        
+        sendEvent(name: setColor, value: cClr, isStateChange: true)        
     }      
     
     
@@ -207,6 +204,11 @@ private Map parseCatchAllMessage(String description) {
 }
 
 // Commands
+def onNow() {
+	log.info "on cmd sent"
+	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
+}
+
 def on() {
 	log.info "on cmd sent"
 	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
