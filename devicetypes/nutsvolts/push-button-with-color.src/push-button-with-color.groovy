@@ -126,7 +126,7 @@ private Map parseOnOff(String description) {
         
         Map cClr = [:]
         cClr.hex = device.currentState("color")?.value
-        //sendEvent(setColor(cClr))
+        sendEvent(setColor(cClr))
     }      
     
     
