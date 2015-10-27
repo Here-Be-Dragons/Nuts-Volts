@@ -69,8 +69,17 @@ def parse(String description) {
     else {
     	log.debug "No parse method for: $description"
     }
-    log.trace map
-	return map ? createEvent(map) : null
+    
+    if (map.value == "Device Boot"){
+    	def result = []
+    	List cmds = bootResponse()
+    	log.trace "Sending current state to device ${cmds}"
+        result = cmds?.collect { new physicalgraph.device.HubAction(it) }  
+        return result 
+    }else{
+    	log.trace map
+		return map ? createEvent(map) : null
+    }
 }
 
 private Map parseReportAttributeMessage(String description) {
@@ -119,13 +128,11 @@ private Map parseOnOff(String description) {
         resultMap.value = "on"
         resultMap.displayed = true
     }  
-    else if(description?.endsWith("2")) {   
-        Map cClr = [:]
-        cClr.hex = device.currentState("color")?.value
-        log.debug "calling setColor on boot with ${cClr}"        
-        sendEvent(name: setColor, value: cClr, isStateChange: true)        
+    else if(description?.endsWith("2")) { 
+        resultMap.name = "info"
+        resultMap.value = "Device Boot"
+        resultMap.displayed = true    
     }      
-    
     
     else {
     	log.debug "On/Off match not found for --> $description"
@@ -204,9 +211,24 @@ private Map parseCatchAllMessage(String description) {
 }
 
 // Commands
-def onNow() {
-	log.info "on cmd sent"
-	"st cmd 0x${device.deviceNetworkId} 1 6 1 {}"
+def bootResponse() {
+	log.debug "Creating boot response"
+    def swtch = device.currentState("switch")?.value												// Get the current on off value
+    if (swtch == "on"){
+        swtch = "1"								
+    }else{
+        swtch = "0"							
+    }    
+    def lvl = device.currentState("level")?.value as int											// Get the current brightness level
+    lvl=(int)lvl * 2.56																				// Scale value basee on 1 to 256 for level
+    def level = hexString(Math.round(lvl))     														
+    def cx = device.currentState("color")?.value													// Get the current color value
+	cx = cx.substring(1, cx.length())																// Remove # from front of hex value.hex string     
+	[
+       	"st cmd 0x${device.deviceNetworkId} 1 6 ${swtch} {}", "delay 200",							// Set On or Off
+        "st cmd 0x${device.deviceNetworkId} 1 8 0 {${level} 0000}", "delay 200",
+		"st wattr 0x${device.deviceNetworkId} 0x38 0x0008 0x400 0x23 {${cx}}", "delay 200"			// Send new RGB Color value write attribute 0x0400        
+	]
 }
 
 def on() {
