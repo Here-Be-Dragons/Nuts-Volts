@@ -37,7 +37,8 @@ metadata {
 		attribute "fcP0", "string"
 		attribute "fcP1", "string"
 		attribute "fcP2", "string"
-		attribute "fcP3", "string"        
+		attribute "fcP3", "string" 
+        attribute "windDir", "string"
 
 		command "refresh"
 	}
@@ -163,7 +164,7 @@ def parse(String description) {
 }
 
 def installed() {
-	runPeriodically(300, poll)		// in seconds
+	runPeriodically(60, poll)		// in seconds
 }
 
 def uninstalled() {
@@ -171,7 +172,7 @@ def uninstalled() {
 }
 
 def updated() {
-	runPeriodically(300, poll)
+	runPeriodically(60, poll)
 }
 
 // handle commands
@@ -200,6 +201,7 @@ def poll() {
 		send(name: "humidity", value: obs.relative_humidity[0..-2] as Integer, unit: "%")
 		send(name: "weatherIcon", value: weatherIcon, displayed: false)
 		send(name: "wind", value: Math.round(obs.wind_mph) as String, unit: "MPH") // as String because of bug in determining state change of 0 numbers
+        send(name: "windDir", value: obs.wind_degrees, displayed: false) 
 
 		// Sunrise / sunset
 		def a = get("astronomy")?.moon_phase
