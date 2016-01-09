@@ -127,7 +127,7 @@ metadata {
 		}     
         
 		valueTile("precipToday", "device.precipToday", decoration: "flat") {
-			state "default", label:'${currentValue}" rain'
+			state "default", label:'${currentValue}"\nprecip'
 		}   
         
 		valueTile("fcastP0", "device.fcP0", decoration: "flat", width: 3, height: 1) {
