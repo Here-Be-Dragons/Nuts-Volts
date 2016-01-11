@@ -21,6 +21,7 @@ metadata {
 		capability "Temperature Measurement"
 		capability "Relative Humidity Measurement"
 		capability "Sensor"
+        capability "Polling"        
 
 		attribute "localSunrise", "string"
 		attribute "localSunset", "string"
@@ -161,18 +162,6 @@ metadata {
 // parse events into attributes
 def parse(String description) {
 	log.debug "Parsing '${description}'"
-}
-
-def installed() {
-	runPeriodically(60, poll)		// in seconds
-}
-
-def uninstalled() {
-	unschedule()
-}
-
-def updated() {
-	runPeriodically(60, poll)
 }
 
 // handle commands
